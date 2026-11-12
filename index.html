@@ -5,6 +5,7 @@
 <title>مطبعة كروت الشبكة</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0b1220;--panel:#121d30;--line:#26364e;--muted:#91a4bd;--accent:#39c6a3;--text:#edf4fc}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 15px;background:var(--accent);color:#06251f;font-weight:700}button.secondary{background:#26364e;color:var(--text)}.top{padding:20px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}.top h1{font-size:22px;margin:0}.top p{color:var(--muted);margin:6px 0 0;font-size:13px}.layout{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;padding:18px;max-width:1600px;margin:auto}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}.panel h2{font-size:16px;margin:0 0 14px}.group{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}.field{display:grid;gap:6px;margin:10px 0}.field label{font-size:12px;color:var(--muted)}input[type=text],input[type=number],select{width:100%;background:#0b1525;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:9px}input[type=color]{width:100%;height:36px;border:0;background:transparent}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:9px 0}.upload{display:block;border:1px dashed #54718f;border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:13px}.upload input{display:block;width:100%;margin-top:8px}.stage{display:grid;gap:14px;align-content:start}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.stats{font-size:13px;color:var(--muted)}.preview-wrap{background:#dce4ed;border-radius:14px;padding:22px;overflow:auto;min-height:560px}.sheet{background:white;color:#111;margin:auto;padding:18px;display:grid;gap:10px;align-content:start;box-shadow:0 8px 28px #0003;width:fit-content;min-width:min(100%,650px)}.card{position:relative;overflow:hidden;border:1px solid #334155;border-radius:8px;color:#142033;background:linear-gradient(135deg,#fff,#e8f3f4);padding:10px;display:flex;flex-direction:column;justify-content:space-between;min-height:120px;background-size:cover;background-position:center}.card:before{content:"";position:absolute;inset:0;background:var(--overlay,transparent);pointer-events:none}.card>*{position:relative}.brand{font-size:10px;opacity:.75}.code{font-size:19px;font-weight:800;letter-spacing:1px}.meta{display:flex;justify-content:space-between;gap:6px;font-size:10px}.empty{color:#64748b;text-align:center;padding:80px 20px}.mapping{display:grid;gap:7px}.hint{font-size:11px;color:var(--muted);line-height:1.7}.hidden{display:none!important}@media(max-width:900px){.layout{grid-template-columns:1fr}.top{padding:16px}.preview-wrap{padding:10px}.sheet{min-width:0!important;max-width:100%}}
@@ -53,6 +54,28 @@ $("bgUpload").onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileRe
 $("sampleBtn").onclick=()=>{rows=[{username:"A10452",password:"8392",price:"500",expiry:"30 يوم"},{username:"A10453",password:"2715",price:"500",expiry:"30 يوم"},{username:"A10454",password:"6108",price:"1000",expiry:"60 يوم"},{username:"A10455",password:"9451",price:"500",expiry:"30 يوم"},{username:"A10456",password:"3027",price:"500",expiry:"30 يوم"},{username:"A10457",password:"7741",price:"1000",expiry:"60 يوم"}];headers=Object.keys(rows[0]);detect();renderMapping();$("fileStatus").textContent="بيانات تجريبية · 6 سجلات";render()};
 document.querySelectorAll("input,select").forEach(el=>{if(!["fileInput","bgUpload"].includes(el.id))el.addEventListener("input",render);});
 function dimensions(){return $("paper").value==="a4"?[210,297]:[215.9,279.4]}
-async function exportPDF(){if(!rows.length){alert("استورد ملفاً أولاً");return}if(!window.jspdf){alert("تعذر تحميل مكتبة PDF. تحقق من الاتصال بالإنترنت.");return}const {jsPDF}=window.jspdf;let s=settings(),[pw,ph]=dimensions(),margin=8,cols=s.cols,rowsPer=Math.max(1,Math.floor((ph-2*margin)/(s.h+s.gap))),per=cols*rowsPer;let pdf=new jsPDF({orientation:"portrait",unit:"mm",format:$("paper").value});for(let i=0;i<rows.length;i++){let pos=i%per;if(i&&pos===0)pdf.addPage();let col=pos%cols,row=Math.floor(pos/cols),x=margin+col*(s.w+s.gap),y=margin+row*(s.h+s.gap);pdf.setDrawColor($("borderColor").value);pdf.setFillColor($("cardColor").value);pdf.roundedRect(x,y,s.w,s.h,s.radius,s.radius,"FD");pdf.setTextColor($("textColor").value);let lines=[];lines.push({t:$("brand").value,size:8,b:true});if($("showUser").checked)lines.push({t:String(val(rows[i],"user")),size:s.font+3,b:true});if($("showPass").checked)lines.push({t:"كلمة المرور: "+val(rows[i],"pass"),size:s.font,b:false});let bottom=[];if($("showPrice").checked)bottom.push("السعر: "+val(rows[i],"price"));if($("showExpiry").checked)bottom.push("الصلاحية: "+val(rows[i],"expiry"));let yy=y+7;for(let l of lines){pdf.setFont("helvetica",l.b?"bold":"normal");pdf.setFontSize(l.size);pdf.text(String(l.t),x+4,yy,{maxWidth:s.w-8});yy+=l.size*.42+2}if(bottom.length){pdf.setFontSize(8);pdf.text(bottom.join("   |   "),x+4,y+s.h-4,{maxWidth:s.w-8})}}pdf.save("network-cards.pdf")}
+async function exportPDF(){
+ if(!rows.length){alert("استورد ملفاً أولاً");return}
+ if(!window.jspdf||!window.html2canvas){alert("تعذر تحميل مكتبات PDF أو المعاينة. تحقق من الاتصال بالإنترنت.");return}
+ const btn=$("exportBtn"),oldLabel=btn.textContent;btn.disabled=true;btn.textContent="جارٍ تجهيز PDF...";
+ let host=null;
+ try{
+  const {jsPDF}=window.jspdf,s=settings(),[pw,ph]=dimensions(),margin=8,cols=s.cols;
+  const rowsPer=Math.max(1,Math.floor((ph-2*margin+s.gap)/(s.h+s.gap))),perPage=cols*rowsPer;
+  if(cols*s.w+(cols-1)*s.gap>pw-2*margin)throw new Error("عرض الكروت مع المسافات يتجاوز عرض الورقة. قلّل عدد الأعمدة أو عرض الكرت.");
+  host=document.createElement("div");host.style.cssText="position:fixed;left:-12000px;top:0;z-index:-1;width:"+(s.w*3.2+4)+"px;direction:rtl;";document.body.appendChild(host);
+  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:$("paper").value,compress:true});
+  for(let i=0;i<rows.length;i++){
+   if(i>0&&i%perPage===0)pdf.addPage();
+   host.innerHTML=cardHTML(rows[i]);await document.fonts.ready;
+   const canvas=await html2canvas(host.firstElementChild,{scale:2.5,backgroundColor:null,useCORS:true,logging:false,imageTimeout:20000});
+   const pos=i%perPage,col=pos%cols,row=Math.floor(pos/cols),x=margin+col*(s.w+s.gap),y=margin+row*(s.h+s.gap);
+   pdf.addImage(canvas.toDataURL("image/png"),"PNG",x,y,s.w,s.h,undefined,"FAST");
+   canvas.width=1;canvas.height=1;btn.textContent="تجهيز PDF: "+(i+1)+" / "+rows.length;
+  }
+  pdf.save("network-cards.pdf");
+ }catch(err){console.error(err);alert("تعذر إنشاء PDF: "+err.message)}
+ finally{if(host)host.remove();btn.disabled=false;btn.textContent=oldLabel}
+}
 $("exportBtn").onclick=exportPDF;$("printBtn").onclick=()=>window.print();
 </script></body></html>
